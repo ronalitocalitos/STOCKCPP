@@ -1,0 +1,156 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <fstream>
+#include <iomanip>
+#include <sstream>
+
+using namespace std;
+
+// ==========================================
+// [โครงสร้างข้อมูล] - งานของ อิง
+// ==========================================
+struct Product {
+    string name;
+    string condition; 
+    int quantity;
+    double cost;
+    double price;
+};
+
+vector<Product> inventory;
+double totalProfit = 0.0;
+
+// ==========================================
+// [ระบบจัดการไฟล์] - งานของ ยีน
+// ==========================================
+void saveData() {
+    ofstream outFile("database.txt");
+    if (outFile.is_open()) {
+        outFile << fixed << setprecision(2) << totalProfit << endl;
+        for (const auto& p : inventory) {
+            outFile << p.name << " " << p.condition << " " 
+                    << p.quantity << " " << p.cost << " " << p.price << endl;
+        }
+        outFile.close();
+    }
+}
+
+void loadData() {
+    ifstream inFile("database.txt");
+    if (!inFile) return;
+
+    string firstLine;
+    if (getline(inFile, firstLine) && !firstLine.empty()) {
+        try { totalProfit = stod(firstLine); } catch (...) { totalProfit = 0.0; }
+    }
+
+    inventory.clear();
+    string line;
+    while (getline(inFile, line)) {
+        if (line.empty()) continue;
+        stringstream ss(line);
+        Product p;
+        if (ss >> p.name >> p.condition >> p.quantity >> p.cost >> p.price) {
+            inventory.push_back(p);
+        }
+    }
+    inFile.close();
+}
+
+// ==========================================
+// [จัดการสต็อก] - งานของ แอม
+// ==========================================
+void addProduct() {
+    Product p;
+    int type;
+    cout << "\n[+ Add Product]\nName: "; cin >> p.name;
+    cout << "Condition (1:มือ 1, 2:มือ 2): "; cin >> type;
+    p.condition = (type == 1) ? "New" : "Used";
+    cout << "Quantity: "; cin >> p.quantity;
+    cout << "Cost Price: "; cin >> p.cost;
+    cout << "Selling Price: "; cin >> p.price;
+    inventory.push_back(p);
+    saveData();
+    cout << ">> Added Successfully!" << endl;
+}
+
+void showStock() {
+    cout << "\n" << setfill('=') << setw(75) << "" << setfill(' ') << endl;
+    cout << left << setw(15) << "Product Name" << setw(12) << "Condition" 
+         << setw(10) << "Stock" << setw(12) << "Cost" << setw(12) << "Price" << endl;
+    cout << setfill('-') << setw(75) << "" << setfill(' ') << endl;
+    
+    cout << fixed << setprecision(2);
+    for (const auto& p : inventory) {
+        cout << left << setw(15) << p.name 
+             << setw(12) << p.condition
+             << setw(10) << p.quantity 
+             << setw(12) << p.cost 
+             << setw(12) << p.price << endl;
+    }
+    cout << "---------------------------------------------------------------------------" << endl;
+    cout << ">>> NET PROFIT (After Shipping Costs): " << totalProfit << " THB" << endl;
+    cout << "===========================================================================" << endl;
+}
+
+// ==========================================
+// [ระบบขายและหักค่าส่ง] - งานของ แมค
+// ==========================================
+void sellProduct() {
+    string name;
+    int type, qty;
+    double shipping;
+    cout << "\n[$ Sell Product]\nEnter Name: "; cin >> name;
+    cout << "Condition (1:มือ 1, 2:มือ 2): "; cin >> type;
+    string targetCond = (type == 1) ? "New" : "Used";
+    
+    for (auto& p : inventory) {
+        if (p.name == name && p.condition == targetCond) {
+            cout << "Available: " << p.quantity << " | Amount to sell: "; cin >> qty;
+            
+            if (qty <= p.quantity) {
+                cout << "Enter Shipping Cost (Expense): "; cin >> shipping;
+                
+                p.quantity -= qty;
+                // คำนวณกำไร: (ราคาขาย - ทุน) * จำนวน - ค่าส่ง
+                double saleProfit = ((p.price - p.cost) * qty) - shipping;
+                totalProfit += saleProfit;
+                
+                cout << "\n>> Sale Result <<" << endl;
+                cout << "Gross Profit: " << (p.price - p.cost) * qty << endl;
+                cout << "Shipping Cost: -" << shipping << endl;
+                cout << "Net Profit for this sale: " << saleProfit << endl;
+                
+                saveData();
+            } else {
+                cout << "!! Error: Not enough stock." << endl;
+            }
+            return;
+        }
+    }
+    cout << "!! Error: Product not found." << endl;
+}
+
+// ==========================================
+// [เมนูหลัก] - งานของ อิง
+// ==========================================
+int main() {
+    loadData();
+    int choice;
+    while (true) {
+        cout << "\n=== INVENTORY SYSTEM (SHIPMENT TRACKING) ===" << endl;
+        cout << "1. View Stock & Net Profit\n2. Add Product\n3. Sell Product\n4. Exit\nChoice: ";
+        if (!(cin >> choice)) {
+            cin.clear(); cin.ignore(1000, '\n'); continue;
+        }
+
+        switch (choice) {
+            case 1: showStock(); break;
+            case 2: addProduct(); break;
+            case 3: sellProduct(); break;
+            case 4: saveData(); return 0;
+            default: cout << "Invalid choice." << endl;
+        }
+    }
+}
