@@ -44,7 +44,7 @@ inline void showStock() {
     double net = totalProfit - totalShippingExpense;
     cout << "-----------------------------------------------------------------" << endl;
     cout << "Gross Profit: " << totalProfit << " | Shipping: " << totalShippingExpense << endl;
-    cout << "NET PROFIT: " << net << " THB (Yearly Est: " << net * 12 << ")" << endl;
+    cout << "NET PROFIT: " << net << endl;
     cout << "=================================================================" << endl;
 }
 #endif
